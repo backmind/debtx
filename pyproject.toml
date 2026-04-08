@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "debtx"
+version = "0.1.0"
+description = "AI-generated code debt scanner. Grade your codebase A-F."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Max Huisman" }]
+keywords = [
+    "ai",
+    "code-quality",
+    "technical-debt",
+    "vibe-coding",
+    "static-analysis",
+    "linter",
+    "claude-code",
+    "copilot",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "click>=8.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+debtx = "debtx.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/loplop-h/debtx"
+Repository = "https://github.com/loplop-h/debtx"
+Issues = "https://github.com/loplop-h/debtx/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["debtx"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
