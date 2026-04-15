@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 from debtx.detectors import register_detector
+from debtx.detectors._text import docstring_line_indices, strip_string_literals
 from debtx.languages import FileContext
 from debtx.models import Finding, Severity
 
@@ -64,8 +65,12 @@ class MissingErrorHandlingDetector:
 
         patterns = _PY_IO_PATTERNS if context.language_name == "python" else _TS_IO_PATTERNS
         findings: list[Finding] = []
+        doc_lines = docstring_line_indices(context.lines, context.language_name)
 
         for i, line in enumerate(context.lines):
+            if i in doc_lines:
+                continue
+
             stripped = line.strip()
 
             if context.language_name == "python" and stripped.startswith("#"):
@@ -73,8 +78,10 @@ class MissingErrorHandlingDetector:
             if context.language_name == "typescript" and stripped.startswith("//"):
                 continue
 
+            code = strip_string_literals(stripped)
+
             for pattern in patterns:
-                if pattern.search(stripped):
+                if pattern.search(code):
                     if not _line_is_inside_try(context.lines, i, context.language_name):
                         findings.append(
                             Finding(

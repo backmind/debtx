@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 from debtx.detectors import register_detector
+from debtx.detectors._text import docstring_line_indices
 from debtx.languages import FileContext
 from debtx.models import Finding, Severity
 
@@ -44,8 +45,12 @@ class HardcodedValuesDetector:
 
         findings: list[Finding] = []
         lang = context.language_name
+        doc_lines = docstring_line_indices(context.lines, lang)
 
         for i, line in enumerate(context.lines):
+            if i in doc_lines:
+                continue
+
             stripped = line.strip()
 
             if lang == "python" and stripped.startswith("#"):
