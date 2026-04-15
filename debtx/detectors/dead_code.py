@@ -51,6 +51,15 @@ class DeadCodeDetector:
                     break
 
                 if next_indent == current_indent:
+                    if context.language_name == "python" and next_stripped.startswith("#"):
+                        continue
+                    if context.language_name == "typescript" and (
+                        next_stripped.startswith("//")
+                        or next_stripped.startswith("/*")
+                        or next_stripped.startswith("*")
+                    ):
+                        continue
+
                     skip_keywords = {"except", "finally", "elif", "else", "case", "}", "catch"}
                     first_next = next_stripped.split("(")[0].split(" ")[0].split(":")[0]
                     if first_next in skip_keywords:
