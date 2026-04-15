@@ -51,6 +51,56 @@ def docstring_line_indices(lines: tuple[str, ...], lang: str) -> frozenset[int]:
     return frozenset(result)
 
 
+def comment_portion(line: str, lang: str) -> str:
+    if lang == "python":
+        in_string: str | None = None
+        i = 0
+        n = len(line)
+        while i < n:
+            c = line[i]
+            if in_string:
+                if c == "\\":
+                    i += 2
+                    continue
+                if c == in_string:
+                    in_string = None
+                i += 1
+                continue
+            if c in ('"', "'"):
+                in_string = c
+                i += 1
+                continue
+            if c == "#":
+                return line[i:]
+            i += 1
+        return ""
+
+    if lang == "typescript":
+        in_string: str | None = None
+        i = 0
+        n = len(line)
+        while i < n:
+            c = line[i]
+            if in_string:
+                if c == "\\":
+                    i += 2
+                    continue
+                if c == in_string:
+                    in_string = None
+                i += 1
+                continue
+            if c in ('"', "'", "`"):
+                in_string = c
+                i += 1
+                continue
+            if c == "/" and i + 1 < n and line[i + 1] == "/":
+                return line[i:]
+            i += 1
+        return ""
+
+    return ""
+
+
 def strip_string_literals(line: str) -> str:
     out: list[str] = []
     i = 0

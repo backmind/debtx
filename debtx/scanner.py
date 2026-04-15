@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from fnmatch import fnmatch
 from pathlib import Path
 
+from debtx.ignore import apply_inline_ignores, build_ignore_map
 from debtx.languages import FileContext, get_language
 from debtx.models import FileReport, ScanReport
 from debtx.scoring import (
@@ -174,6 +175,8 @@ def run_scan(
             continue
 
         findings = run_all(context, strict)
+        ignore_map = build_ignore_map(context.lines, context.language_name)
+        findings = apply_inline_ignores(findings, ignore_map)
         rel_path = os.path.relpath(file_path, root)
 
         file_reports.append(

@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 from debtx.detectors import register_detector
-from debtx.detectors._text import docstring_line_indices
+from debtx.detectors._text import comment_portion, docstring_line_indices
 from debtx.languages import FileContext
 from debtx.models import Finding, Severity
 
@@ -17,56 +17,6 @@ _MARKERS = {
 }
 
 _MARKER_RE = re.compile(r"\b(" + "|".join(_MARKERS.keys()) + r")\b(?=[\s:\-(]|$)")
-
-
-def _comment_portion(line: str, lang: str) -> str:
-    if lang == "python":
-        in_string: str | None = None
-        i = 0
-        n = len(line)
-        while i < n:
-            c = line[i]
-            if in_string:
-                if c == "\\":
-                    i += 2
-                    continue
-                if c == in_string:
-                    in_string = None
-                i += 1
-                continue
-            if c in ('"', "'"):
-                in_string = c
-                i += 1
-                continue
-            if c == "#":
-                return line[i:]
-            i += 1
-        return ""
-
-    if lang == "typescript":
-        in_string: str | None = None
-        i = 0
-        n = len(line)
-        while i < n:
-            c = line[i]
-            if in_string:
-                if c == "\\":
-                    i += 2
-                    continue
-                if c == in_string:
-                    in_string = None
-                i += 1
-                continue
-            if c in ('"', "'", "`"):
-                in_string = c
-                i += 1
-                continue
-            if c == "/" and i + 1 < n and line[i + 1] == "/":
-                return line[i:]
-            i += 1
-        return ""
-
-    return ""
 
 
 class TodoCommentsDetector:
@@ -86,7 +36,7 @@ class TodoCommentsDetector:
             if i in doc_lines:
                 continue
 
-            comment = _comment_portion(line, context.language_name)
+            comment = comment_portion(line, context.language_name)
             if not comment:
                 continue
 
