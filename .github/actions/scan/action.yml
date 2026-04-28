@@ -23,6 +23,16 @@ inputs:
   python-version:
     required: false
     default: '3.12'
+  exclude:
+    description: |
+      Newline-separated list of glob patterns to exclude from the scan.
+      Each non-empty line is passed as `--exclude <pattern>` to debtx.
+      Example:
+        exclude: |
+          **/tests/**
+          scripts/legacy/*.py
+    required: false
+    default: ''
 runs:
   using: composite
   steps:
@@ -49,6 +59,10 @@ runs:
         if [ -n "${{ inputs.fail-under }}" ]; then
           ARGS+=(--fail-under "${{ inputs.fail-under }}")
         fi
+        while IFS= read -r pattern; do
+          [ -z "$pattern" ] && continue
+          ARGS+=(--exclude "$pattern")
+        done <<< "${{ inputs.exclude }}"
         debtx "${ARGS[@]}"
 
     - name: Render summary into job log

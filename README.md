@@ -59,11 +59,25 @@ A reusable composite action lives at `.github/actions/scan`:
   with:
     path: .
     language: python
+    exclude: |
+      **/tests/**
     # fail-under: ''   # leave empty for informative mode (recommended)
 ```
 
 Inputs: `path`, `language`, `strict`, `fail-under` (empty by default),
-`python-version`. See `.github/actions/scan/action.yml` for defaults.
+`exclude`, `python-version`. See `.github/actions/scan/action.yml` for
+defaults.
+
+`exclude` takes a newline-separated list of glob patterns; each
+non-empty line is passed through to debtx as `--exclude <pattern>`.
+Typical use is dropping test trees so they aren't graded as production
+code:
+
+```yaml
+exclude: |
+  **/tests/**
+  scripts/legacy/*.py
+```
 
 ### Inline alternative
 
