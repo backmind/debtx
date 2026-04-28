@@ -84,3 +84,59 @@ def test_scan_strict():
         _make_test_project(tmpdir)
         result = runner.invoke(main, ["scan", tmpdir, "--strict"])
         assert result.exit_code == 0
+
+
+def _make_noisy_project(tmpdir: str) -> None:
+    """Project guaranteed to score worse than A: giant function + missing tests."""
+    src = ["def big():"] + [f"    x{i} = {i}" for i in range(150)]
+    with open(os.path.join(tmpdir, "big.py"), "w") as f:
+        f.write("\n".join(src) + "\n")
+    with open(os.path.join(tmpdir, "io_ops.py"), "w") as f:
+        f.write(
+            "def load():\n"
+            "    data = open('x.txt').read()\n"
+            "    return data\n"
+        )
+
+
+def test_scan_fail_under_satisfied():
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        _make_test_project(tmpdir)
+        result = runner.invoke(main, ["scan", tmpdir, "--fail-under", "F"])
+        assert result.exit_code == 0
+
+
+def test_scan_fail_under_violated():
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        _make_noisy_project(tmpdir)
+        # --strict pushes the synthetic project below A so the threshold bites.
+        result = runner.invoke(
+            main, ["scan", tmpdir, "--strict", "--fail-under", "A"]
+        )
+        assert result.exit_code == 1
+
+
+def test_scan_fail_under_default_never_fails():
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        _make_noisy_project(tmpdir)
+        result = runner.invoke(main, ["scan", tmpdir])
+        assert result.exit_code == 0
+
+
+def test_scan_fail_under_help_mentions_informative_default():
+    runner = CliRunner()
+    result = runner.invoke(main, ["scan", "--help"])
+    assert result.exit_code == 0
+    assert "--fail-under" in result.output
+    assert "informative-only by default" in result.output
+
+
+def test_scan_fail_under_rejects_unknown_grade():
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        _make_test_project(tmpdir)
+        result = runner.invoke(main, ["scan", tmpdir, "--fail-under", "Z"])
+        assert result.exit_code != 0

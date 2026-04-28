@@ -14,6 +14,7 @@ pip install debtx
 debtx scan .
 debtx scan ./src --format md
 debtx scan . --strict
+debtx scan . --fail-under B   # opt-in CI gating; informative-only by default
 debtx badge
 ```
 

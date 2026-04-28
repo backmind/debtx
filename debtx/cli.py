@@ -23,6 +23,17 @@ def main(ctx: click.Context) -> None:
 @click.option("--strict", is_flag=True, help="Use stricter thresholds.")
 @click.option("--output", "-o", type=click.Path(), help="Write report to file.")
 @click.option("--exclude", multiple=True, help="Glob patterns to exclude.")
+@click.option(
+    "--fail-under",
+    "fail_under",
+    type=click.Choice(["A", "B", "C", "D", "F"]),
+    default=None,
+    help=(
+        "Exit non-zero if overall grade is worse than this threshold. "
+        "Default: never fail (exit 0 regardless). Use this to opt into "
+        "gating; debtx is informative-only by default."
+    ),
+)
 def scan(
     path: str,
     fmt: str,
@@ -30,6 +41,7 @@ def scan(
     strict: bool,
     output: str | None,
     exclude: tuple[str, ...],
+    fail_under: str | None,
 ) -> None:
     """Scan a codebase for AI-generated technical debt."""
     from debtx.scanner import run_scan
@@ -65,6 +77,12 @@ def scan(
             click.echo(f"Report written to {output}")
         else:
             click.echo(content)
+
+    if fail_under is not None:
+        from debtx.scoring import grade_meets_threshold
+
+        if not grade_meets_threshold(report.overall_grade, fail_under):
+            raise click.exceptions.Exit(1)
 
 
 @main.command()

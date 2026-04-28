@@ -1,11 +1,14 @@
 """Tests for scoring engine."""
 
+import pytest
+
 from debtx.models import FileReport, Finding, Severity
 from debtx.scoring import (
     build_summary_line,
     calculate_category_scores,
     calculate_overall_grade,
     calculate_vibe_score,
+    grade_meets_threshold,
     score_to_grade,
 )
 
@@ -72,6 +75,30 @@ def test_category_scores_with_findings():
 
 def test_overall_grade_empty():
     assert calculate_overall_grade(()) == "A"
+
+
+def test_grade_meets_threshold_equal():
+    assert grade_meets_threshold("A", "A") is True
+
+
+def test_grade_meets_threshold_better():
+    assert grade_meets_threshold("A", "C") is True
+
+
+def test_grade_meets_threshold_worse():
+    assert grade_meets_threshold("C", "A") is False
+
+
+def test_grade_meets_threshold_floor_passes_anything():
+    for g in ("A", "B", "C", "D", "F"):
+        assert grade_meets_threshold(g, "F") is True
+
+
+def test_grade_meets_threshold_unknown_grade():
+    with pytest.raises(ValueError):
+        grade_meets_threshold("Z", "A")
+    with pytest.raises(ValueError):
+        grade_meets_threshold("A", "z")
 
 
 def test_strict_mode_lowers_scores():
