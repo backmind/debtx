@@ -37,6 +37,17 @@ GRADE_BOUNDARIES: tuple[tuple[str, int], ...] = (
     ("F", 0),
 )
 
+GRADE_ORDER: tuple[str, ...] = ("F", "D", "C", "B", "A")
+
+
+def grade_meets_threshold(actual: str, minimum: str) -> bool:
+    """True iff `actual` is at least as good as `minimum` on A>B>C>D>F."""
+    if actual not in GRADE_ORDER or minimum not in GRADE_ORDER:
+        raise ValueError(
+            f"Unknown grade(s): actual={actual!r} minimum={minimum!r}"
+        )
+    return GRADE_ORDER.index(actual) >= GRADE_ORDER.index(minimum)
+
 
 def score_to_grade(score: float) -> str:
     for grade, threshold in GRADE_BOUNDARIES:

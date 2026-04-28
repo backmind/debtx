@@ -1,0 +1,88 @@
+name: debtx scan
+description: Run debtx and emit a summary + artifact. Informative by default.
+inputs:
+  path:
+    description: Directory to scan, relative to workflow workspace.
+    required: false
+    default: .
+  language:
+    description: 'Language filter: python | typescript | all'
+    required: false
+    default: all
+  strict:
+    description: 'Use stricter thresholds (true/false).'
+    required: false
+    default: 'false'
+  fail-under:
+    description: |
+      Optional grade threshold (A|B|C|D|F). If set, the action exits
+      non-zero when the scan's overall grade is worse than this.
+      LEAVE EMPTY for informative-only mode (default, recommended).
+    required: false
+    default: ''
+  python-version:
+    required: false
+    default: '3.12'
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install debtx (this fork)
+      shell: bash
+      # Pin to a commit SHA in production; main is fine for the first roll-out.
+      run: pip install "debtx @ git+https://github.com/backmind/debtx@main"
+
+    - name: Run debtx
+      shell: bash
+      run: |
+        ARGS=(scan "${{ inputs.path }}" --format json --output debtx-report.json)
+        if [ "${{ inputs.language }}" != "all" ]; then
+          ARGS+=(--lang "${{ inputs.language }}")
+        fi
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          ARGS+=(--strict)
+        fi
+        if [ -n "${{ inputs.fail-under }}" ]; then
+          ARGS+=(--fail-under "${{ inputs.fail-under }}")
+        fi
+        debtx "${ARGS[@]}"
+
+    - name: Render summary into job log
+      shell: bash
+      if: always()
+      run: |
+        if [ -f debtx-report.json ]; then
+          python - <<'PY'
+        import json, os, pathlib
+        r = json.loads(pathlib.Path("debtx-report.json").read_text())
+        summary = pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"])
+        lines = [
+            f"## debtx — grade `{r['overall_grade']}` (vibe score `{r['vibe_score']}`)",
+            "",
+            f"Files scanned: **{r['files_scanned']}** · "
+            f"Total lines: **{r['total_lines']}**",
+            "",
+            "| Category | Grade | Score | Findings |",
+            "|----------|-------|-------|----------|",
+        ]
+        for c in r["category_scores"]:
+            lines.append(
+                f"| {c['name']} | {c['grade']} | {c['score']:.1f} | {c['finding_count']} |"
+            )
+        summary.write_text("\n".join(lines) + "\n")
+        PY
+        else
+          echo "::warning::debtx-report.json not produced; skipping summary."
+        fi
+
+    - name: Upload report artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: debtx-report
+        path: debtx-report.json
+        if-no-files-found: warn

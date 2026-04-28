@@ -14,6 +14,7 @@ pip install debtx
 debtx scan .
 debtx scan ./src --format md
 debtx scan . --strict
+debtx scan . --fail-under B   # opt-in CI gating; informative-only by default
 debtx badge
 ```
 
@@ -35,6 +36,23 @@ debtx badge
 | Inconsistent Naming | Mixed camelCase/snake_case |
 | Deep Nesting | 4+ levels of indentation |
 | Dead Code | Unreachable code after return/break |
+
+## CI integration
+
+debtx is informative by default — it produces a grade, never an exit
+code, unless you opt into `--fail-under`. A reusable GitHub Actions
+composite action lives at `.github/actions/scan`:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: backmind/debtx/.github/actions/scan@main
+  with:
+    path: .
+    language: python
+```
+
+A fuller CI guide (inline alternative, JSON schema, anti-pattern
+callouts) is coming in the README rewrite.
 
 ## Grading Scale
 
