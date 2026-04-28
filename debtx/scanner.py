@@ -101,7 +101,14 @@ def _discover_files(
                 continue
 
             full_path = os.path.join(dirpath, filename)
-            rel_path = os.path.relpath(full_path, root)
+            try:
+                rel_path = os.path.relpath(full_path, root)
+            except (ValueError, OSError):
+                # On Windows, os.walk can surface pseudo-paths like
+                # \\.\nul or \\.\pipe\... (stray symlinks, junctions,
+                # tools that wrote to nul). os.path.relpath then raises
+                # because the mounts differ. Skip and keep scanning.
+                continue
 
             if exclude_patterns and _matches_exclude(rel_path, exclude_patterns):
                 continue
